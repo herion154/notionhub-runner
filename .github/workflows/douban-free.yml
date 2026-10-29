@@ -147,6 +147,23 @@ jobs:
         with:
           python-version: "3.11"
 
+      - name: 跳过电影 IMDb 网页补全
+        working-directory: .notionhub-source/douban
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          source = Path("douban2notion/douban.py")
+          text = source.read_text(encoding="utf-8")
+          changes = (
+              ('                or not notion_movive.get("IMDB")\n', ''),
+              ('                if not notion_movive.get("IMDB"):\n                    movie["IMDB"] = get_imdb(movie.get("豆瓣链接"))\n', ''),
+          )
+          for before, after in changes:
+              assert text.count(before) == 1, "Unexpected upstream movie sync code"
+              text = text.replace(before, after)
+          source.write_text(text, encoding="utf-8")
+          PY
+
       - name: 安装开源同步程序
         working-directory: .notionhub-source/douban
         run: |
