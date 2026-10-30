@@ -1,4 +1,4 @@
-# NotionHub generated free workflow v3
+# NotionHub generated free workflow v4
 name: 豆瓣免费版
 run-name: ${{ github.workflow }}
 
@@ -22,7 +22,7 @@ permissions:
   id-token: write
 
 concurrency:
-  group: notionhub-douban-sync-${{ github.ref_name }}
+  group: notionhub-douban-free-sync-${{ github.ref_name }}
   cancel-in-progress: true
 
 jobs:
@@ -147,23 +147,6 @@ jobs:
         with:
           python-version: "3.11"
 
-      - name: 跳过电影 IMDb 网页补全
-        working-directory: .notionhub-source/douban
-        run: |
-          python3 - <<'PY'
-          from pathlib import Path
-          source = Path("douban2notion/douban.py")
-          text = source.read_text(encoding="utf-8")
-          changes = (
-              ('                or not notion_movive.get("IMDB")\n', ''),
-              ('                if not notion_movive.get("IMDB"):\n                    movie["IMDB"] = get_imdb(movie.get("豆瓣链接"))\n', ''),
-          )
-          for before, after in changes:
-              assert text.count(before) == 1, "Unexpected upstream movie sync code"
-              text = text.replace(before, after)
-          source.write_text(text, encoding="utf-8")
-          PY
-
       - name: 安装开源同步程序
         working-directory: .notionhub-source/douban
         run: |
@@ -186,6 +169,7 @@ jobs:
         working-directory: .notionhub-source/douban
         run: |
           export NOTION_TOKEN="$(jq -r '.notion.targets.movie.token' "$FREE_CONFIG_FILE")"
+          export DATABASE_ID="$(jq -r '.notion.targets.movie.pages.root' "$FREE_CONFIG_FILE")"
           NAME="$(jq -r '.account.name' "$FREE_CONFIG_FILE")"
           github_heatmap notion --notion_token "$NOTION_TOKEN" --database_id "$DATABASE_ID" --date_prop_name "日期" --value_prop_name "看过" --unit "部" --year "$(date +%Y)" --me "$NAME" --without-type-name
           heatmap movie
@@ -205,6 +189,7 @@ jobs:
         working-directory: .notionhub-source/douban
         run: |
           export NOTION_TOKEN="$(jq -r '.notion.targets.book.token' "$FREE_CONFIG_FILE")"
+          export DATABASE_ID="$(jq -r '.notion.targets.book.pages.root' "$FREE_CONFIG_FILE")"
           NAME="$(jq -r '.account.name' "$FREE_CONFIG_FILE")"
           github_heatmap notion --notion_token "$NOTION_TOKEN" --database_id "$DATABASE_ID" --date_prop_name "日期" --value_prop_name "读过" --unit "本" --year "$(date +%Y)" --me "$NAME" --without-type-name
           heatmap book
